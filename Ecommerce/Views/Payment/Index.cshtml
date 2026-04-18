@@ -1,0 +1,198 @@
+@{
+    ViewData["Title"] = "Secure Checkout";
+    var cartItems = ViewBag.CartItems as List<CartItem> ?? new List<CartItem>();
+    
+    decimal subtotal = 0;
+    foreach(var item in cartItems) 
+    {
+        subtotal += (decimal)(item.Product!.Price) * (item.Quantity);
+    }
+    decimal tax = subtotal * 0.08m; // 8% tax
+    decimal total = subtotal + tax;
+    var clientId = ViewData["PayPalClientId"]?.ToString() ?? "test";
+}
+
+<style>
+    body {
+        background-color: #f4f6f9;
+    }
+    .checkout-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding-top: 30px;
+    }
+    .card-modern {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+        background: #fff;
+    }
+    .summary-item {
+        border-bottom: 1px solid #f1f3f5;
+        padding: 12px 0;
+    }
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+    .product-thumb {
+        width: 60px;
+        height: 60px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .product-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .paypal-wrapper {
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fafafc;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    .total-row {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #212529;
+    }
+</style>
+
+<div class="checkout-container mb-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-dark"><i class="bi bi-shield-lock text-success me-2"></i> Secure Checkout</h2>
+        <p class="text-muted">Review your order and complete the payment</p>
+    </div>
+
+    <div class="row gx-lg-5">
+        <!-- Order Details Area -->
+        <div class="col-lg-6 mb-4">
+            <div class="card card-modern p-4 h-100">
+                <h4 class="fw-bold mb-4">Order Summary</h4>
+                
+                <div class="mb-4" style="max-height: 350px; overflow-y: auto; padding-right: 10px;">
+                    @foreach (var i in cartItems)
+                    {
+                        <div class="d-flex align-items-center summary-item">
+                            <div class="product-thumb me-3">
+                                <img src="~/images/product_headphones.png" alt="@i.Product.Name" />
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-1">@i.Product.Name</h6>
+                                <p class="text-muted small mb-0">Qty: @i.Quantity</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="fw-semibold text-dark">$@(((decimal)i.Product.Price * i.Quantity).ToString("0.00"))</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="d-flex justify-content-between mb-2 text-muted">
+                    <span>Subtotal</span>
+                    <span class="fw-semibold">$@subtotal.ToString("0.00")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 text-muted">
+                    <span>Shipping</span>
+                    <span class="text-success fw-semibold">Free</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 text-muted">
+                    <span>Tax (8%)</span>
+                    <span class="fw-semibold">$@tax.ToString("0.00")</span>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-3 pt-3 border-top">
+                    <span class="total-row">Total</span>
+                    <span class="total-row">$@total.ToString("0.00")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Area -->
+        <div class="col-lg-6">
+            <div class="card card-modern p-4">
+                <h4 class="fw-bold mb-4">Payment Method</h4>
+                <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill fs-4 me-3 text-primary"></i>
+                    <div>
+                        <small>We use PayPal to ensure your transaction is secure. You do not need a PayPal account to pay with a credit card.</small>
+                    </div>
+                </div>
+
+                <div class="paypal-wrapper">
+                    <div id="paypal-button-container" class="w-100"></div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <i class="bi bi-lock-fill text-muted"></i> <span class="small text-muted">256-bit SSL encrypted checkout</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Load PayPal JS SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&currency=USD"></script>
+    <script>
+        // Total amount passed from server
+        const totalAmount = '@total.ToString("0.00")';
+
+        paypal.Buttons({
+            createOrder: function(data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: totalAmount // The value the user gets charged
+                        }
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                // Return a promise from actions.order.capture()
+                return actions.order.capture().then(function(details) {
+                    // Show loading overlay (optional)
+                    if(details.status === "COMPLETED") {
+                        // Call your backend to save the order
+                        return fetch('/Payment/CompleteOrder', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                // Include any required anti-forgery token if you add it
+                            },
+                            body: JSON.stringify({
+                                id: details.id,
+                                status: details.status
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(function(data) {
+                            if (data.success) {
+                                // Redirect to success page
+                                window.location.href = '/Payment/Success?orderId=' + data.orderId;
+                            } else {
+                                alert("Error processing order on server.");
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert("Something went wrong while completing the order.");
+                        });
+                    }
+                });
+            },
+            onError: function (err) {
+                console.error('PayPal Error:', err);
+            }
+        }).render('#paypal-button-container');
+    </script>
+}

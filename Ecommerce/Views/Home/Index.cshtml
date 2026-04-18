@@ -1,0 +1,126 @@
+@{
+    ViewData["Title"] = "Home Page";
+    var products = ViewBag.Products as List<Product> ?? new List<Product>();
+    var categories = ViewBag.Categories as List<Category> ?? new List<Category>();
+}
+
+<style>
+    .product-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .product-img {
+        height: 250px;
+        object-fit: cover;
+        width: 100%;
+        transition: transform 0.3s ease;
+    }
+    .product-card:hover .product-img {
+        transform: scale(1.05);
+    }
+    .img-wrapper {
+        overflow: hidden;
+        position: relative;
+    }
+    .badge-sale {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+    }
+    .hero-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        margin-bottom: 3rem;
+    }
+</style>
+
+<div class="hero-section text-center py-5 px-3">
+    <h1 class="display-4 fw-bold text-dark mb-3">Discover Our Latest Collection</h1>
+    <p class="lead text-muted mb-4">Explore premium products crafted with perfection and style.</p>
+</div>
+
+<div class="row align-items-center mb-4">
+    <div class="col-md-6">
+        <h2 class="h3 fw-bold mb-0">Trending Products</h2>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        <div class="btn-group shadow-sm" role="group">
+            @foreach(var category in categories)
+            {
+                @* Check if the current category ID matches the ID in the route data *@
+                var isActive = (Context.Request.RouteValues["id"]?.ToString() == category.Id.ToString()) 
+                               ? "active" 
+                               : "";
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   asp-route-id="@category.Id"
+                   class="btn btn-outline-dark px-4 @isActive">
+                   @category.Name
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-5">
+    <!-- Product 1 -->
+    @if(products.Count > 0)
+    {
+        @foreach(var p in products)
+        {
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm product-card">
+
+                    <div class="img-wrapper">
+                        <span class="badge bg-danger shadow-sm badge-sale px-2 py-1">Sale</span>
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80" class="card-img-top product-img" alt="Premium Smart Watch">
+                    </div>
+                    <div class="card-body d-flex flex-column p-4">
+                        <div class="text-muted small mb-2 text-uppercase fw-semibold tracking-wider">Electronics</div>
+                        <h5 class="card-title fw-bold mb-2">@p.Name</h5>
+                        <div class="mb-3 d-flex align-items-center">
+                            <div class="text-warning me-2">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-half"></i>
+                            </div>
+                            <span class="text-muted small">(124)</span>
+                        </div>
+                        <div class="mt-auto d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="fs-5 fw-bold text-dark">$@p.Price</span>
+                            </div>
+                        </div>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <form method="post" asp-controller="Cart" asp-action="Add" class="mt-auto">
+                                <input type="hidden" name="productId" value="@p.Id" />
+                                <button type="submit" class="btn btn-dark w-100 rounded-pill fw-semibold py-2 px-4 shadow-sm">
+                                    <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-dark w-100 mt-auto rounded-pill fw-semibold py-2 px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#loginModal" onclick="alert('Please log in to add items to your cart.');">
+                                <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    } else
+    {
+        <div>No products for this catogary</div>
+    }
+</div>
