@@ -1,0 +1,145 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    var categories = ViewBag.Categories as List<Ecommerce.Models.Category> ?? new List<Ecommerce.Models.Category>();
+    var products = ViewBag.Products as List<Ecommerce.Models.Product> ?? new List<Ecommerce.Models.Product>();
+}
+
+<style>
+    body {
+        background-color: #f4f6f9;
+    }
+    .admin-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        background: #fff;
+        height: 100%;
+    }
+    .admin-header {
+        background: linear-gradient(135deg, #212529, #343a40);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 20px;
+        margin: -20px -20px 20px -20px;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark"><i class="bi bi-speedometer2 text-warning me-2"></i> Admin Dashboard</h2>
+    </div>
+
+    <div class="row g-4">
+        <!-- Add Category Section -->
+        <div class="col-lg-5">
+            <div class="card admin-card p-4">
+                <div class="admin-header">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-tags me-2 text-warning"></i> Add New Category</h5>
+                </div>
+                <form asp-controller="Admin" asp-action="AddCategory" method="post">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">Category Name</label>
+                        <input type="text" name="categoryName" class="form-control form-control-lg focus-ring-warning" placeholder="e.g., Electronics, Books..." required />
+                        <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i>If category already exists, it will not be duplicated.</div>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold rounded-pill text-dark shadow-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Add Category
+                    </button>
+                </form>
+
+                <hr class="my-4 text-muted opacity-25">
+                
+                <h6 class="fw-bold mb-3 text-muted">Existing Categories (@categories.Count)</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var cat in categories)
+                    {
+                        <span class="badge bg-light text-dark border p-2 shadow-sm">@cat.Name</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Product Section -->
+        <div class="col-lg-7">
+            <div class="card admin-card p-4">
+                <div class="admin-header bg-dark">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-box-seam me-2 text-warning"></i> Add New Product</h5>
+                </div>
+                <form asp-controller="Admin" asp-action="AddProduct" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-muted">Product Name*</label>
+                            <input type="text" name="Name" class="form-control focus-ring-warning" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-muted">Category*</label>
+                            <select name="CategoryId" class="form-select focus-ring-warning" required>
+                                <option value="" disabled selected>Select Category</option>
+                                @foreach (var cat in categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-muted">Price ($)*</label>
+                            <input type="number" step="0.01" name="Price" class="form-control focus-ring-warning" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-muted">Stock Quantity</label>
+                            <input type="number" name="StockQuantity" class="form-control focus-ring-warning" value="10" />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">Description</label>
+                        <textarea name="Description" class="form-control focus-ring-warning" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-100 fw-bold rounded-pill text-dark shadow-sm">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Save Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Products Table -->
+    <div class="card admin-card mt-4 p-4">
+        <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-list-ul me-2 text-warning"></i> Recently Added Products</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var prod in products.Take(10))
+                    {
+                        <tr>
+                            <td><span class="text-muted">#@prod.Id</span></td>
+                            <td class="fw-semibold">@prod.Name</td>
+                            <td><span class="badge bg-secondary">@(prod.Category?.Name ?? "None")</span></td>
+                            <td class="text-success fw-bold">$@prod.Price?.ToString("0.00")</td>
+                            <td>@prod.StockQuantity</td>
+                        </tr>
+                    }
+                    @if (!products.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No products found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,113 @@
+@{
+    var authError = TempData["AuthError"] as string;
+    var activeTab = TempData["ActiveTab"] as string ?? "login";
+    bool hasError = !string.IsNullOrEmpty(authError);
+}
+
+<!-- Login / Registration Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            
+            <div class="modal-header border-0 pb-0">
+                <ul class="nav nav-tabs border-0 w-100" id="authTabs" role="tablist">
+                    <li class="nav-item w-50 text-center" role="presentation">
+                        <button class="nav-link w-100 fw-semibold fs-5 bg-transparent border-0 border-bottom border-3 @(activeTab == "login" ? "active text-dark border-warning" : "text-muted border-light")"
+                                id="login-tab" data-bs-toggle="tab" data-bs-target="#login"
+                                type="button" role="tab" aria-controls="login"
+                                aria-selected="@(activeTab == "login" ? "true" : "false")">Login</button>
+                    </li>
+                    <li class="nav-item w-50 text-center" role="presentation">
+                        <button class="nav-link w-100 fw-semibold fs-5 bg-transparent border-0 border-bottom border-3 @(activeTab == "register" ? "active text-dark border-warning" : "text-muted border-light")"
+                                id="register-tab" data-bs-toggle="tab" data-bs-target="#register"
+                                type="button" role="tab" aria-controls="register"
+                                aria-selected="@(activeTab == "register" ? "true" : "false")">Register</button>
+                    </li>
+                </ul>
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4 pt-4">
+
+                @* ── Shared error alert (shown on whichever tab caused the error) ── *@
+                @if (hasError)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 mb-3" role="alert">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-exclamation-circle-fill flex-shrink-0" viewBox="0 0 16 16">
+                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+                        </svg>
+                        <span>@authError</span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div class="tab-content" id="authTabsContent">
+                    
+                    <!-- Login Form -->
+                    <div class="tab-pane fade @(activeTab == "login" ? "show active" : "")" id="login" role="tabpanel" aria-labelledby="login-tab">
+                        <form asp-controller="User" asp-action="Login" method="post">
+                            <div class="mb-3">
+                                <label for="loginEmail" class="form-label text-muted fw-bold">Email Address</label>
+                                <input type="email" class="form-control form-control-lg bg-light" id="loginEmail" name="Email" placeholder="name@example.com" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="loginPassword" class="form-label text-muted fw-bold">Password</label>
+                                <input type="password" class="form-control form-control-lg bg-light" id="loginPassword" name="Password" placeholder="••••••••" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-warning btn-lg fw-bold shadow-sm rounded-pill text-dark">Sign In</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div class="tab-pane fade @(activeTab == "register" ? "show active" : "")" id="register" role="tabpanel" aria-labelledby="register-tab">
+                        <form asp-controller="User" asp-action="Register" method="post">
+                            <div class="mb-3">
+                                <label for="userName" class="form-label text-muted fw-bold">User Name</label>
+                                <input type="text" class="form-control form-control-lg bg-light" id="userName" name="Name" placeholder="John Doe" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="regEmail" class="form-label text-muted fw-bold">Email Address</label>
+                                <input type="email" class="form-control form-control-lg bg-light" id="regEmail" name="Email" placeholder="name@example.com" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="regPassword" class="form-label text-muted fw-bold">Password</label>
+                                <input type="password" class="form-control form-control-lg bg-light" id="regPassword" name="Password" placeholder="••••••••" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-dark btn-lg fw-bold shadow-sm rounded-pill text-warning">Create Account</button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ── Auto-open the modal if there was an auth error ──
+        var hasError = @Json.Serialize(hasError);
+        if (hasError) {
+            var modal = new bootstrap.Modal(document.getElementById('loginModal'));
+            modal.show();
+        }
+
+        // ── Tab active styling ──
+        var triggerTabList = [].slice.call(document.querySelectorAll('#authTabs button'));
+        triggerTabList.forEach(function (triggerEl) {
+            triggerEl.addEventListener('click', function () {
+                triggerTabList.forEach(el => {
+                    el.classList.remove('text-dark', 'border-warning', 'active');
+                    el.classList.add('text-muted', 'border-light');
+                });
+                this.classList.remove('text-muted', 'border-light');
+                this.classList.add('text-dark', 'border-warning', 'active');
+            });
+        });
+    });
+</script>
